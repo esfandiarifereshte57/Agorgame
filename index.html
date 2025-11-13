@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بازی Breakout</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Tahoma', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-box {
+            text-align: center;
+        }
+        
+        .info-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .info-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        canvas {
+            background: #0a0e21;
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+            display: block;
+            width: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: #ff5722;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            background: #ff7043;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .instructions h2 {
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+        
+        .instructions p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .game-over, .level-complete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            box-shadow: 0 0 30px rgba(255, 87, 34, 0.5);
+            z-index: 10;
+            width: 80%;
+            max-width: 400px;
+        }
+        
+        .game-over h2, .level-complete h2 {
+            color: #ff5722;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        
+        .game-over p, .level-complete p {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .game-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>بازی Breakout</h1>
+            <p>آجرها را با توپ بشکنید و به امتیاز بالا برسید!</p>
+        </header>
+        
+        <div class="game-info">
+            <div class="info-box">
+                <div class="info-label">امتیاز</div>
+                <div class="info-value" id="score">0</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">سطح</div>
+                <div class="info-value" id="level">1</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">زندگی</div>
+                <div class="info-value" id="lives">3</div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="800" height="500"></canvas>
+            
+            <div id="gameOver" class="game-over">
+                <h2>بازی تمام شد!</h2>
+                <p>امتیاز نهایی: <span id="finalScore">0</span></p>
+                <button id="restartButton">شروع مجدد</button>
+            </div>
+            
+            <div id="levelComplete" class="level-complete">
+                <h2>آفرین! سطح کامل شد</h2>
+                <p>به سطح بعدی می‌روید</p>
+                <button id="nextLevelButton">سطح بعدی</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="startButton">شروع بازی</button>
+            <button id="pauseButton">توقف بازی</button>
+        </div>
+        
+        <div class="instructions">
+            <h2>راهنمای بازی</h2>
+            <p>• از کلیدهای چپ و راست کیبورد یا حرکت موس برای حرکت صفحه استفاده کنید</p>
+            <p>• تمام آجرها را برای تکمیل سطح بشکنید</p>
+            <p>• اگر توپ از صفحه خارج شود، یک زندگی از دست می‌دهید</p>
+            <p>• آجرهای رنگی امتیاز بیشتری دارند</p>
+        </div>
+    </div>
+
+    <script>
+        // دریافت المان‌های DOM
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const livesElement = document.getElementById('lives');
+        const startButton = document.getElementById('startButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const restartButton = document.getElementById('restartButton');
+        const nextLevelButton = document.getElementById('nextLevelButton');
+        const gameOverScreen = document.getElementById('gameOver');
+        const levelCompleteScreen = document.getElementById('levelComplete');
+        const finalScoreElement = document.getElementById('finalScore');
+
+        // متغیرهای بازی
+        let score = 0;
+        let level = 1;
+        let lives = 3;
+        let gameRunning = false;
+        let gamePaused = false;
+        let animationId;
+
+        // تنظیمات اندازه‌ها
+        const paddleHeight = 15;
+        const paddleWidth = 100;
+        const ballRadius = 10;
+        const brickRowCount = 5;
+        const brickColumnCount = 9;
+        const brickWidth = 75;
+        const brickHeight = 20;
+        const brickPadding = 10;
+        const brickOffsetTop = 60;
+        const brickOffsetLeft = 35;
+
+        // موقعیت اولیه
+        let paddleX = (canvas.width - paddleWidth) / 2;
+        let ballX = canvas.width / 2;
+        let ballY = canvas.height - 30;
+        let ballSpeedX = 5;
+        let ballSpeedY = -5;
+
+        // آرایه آجرها
+        let bricks = [];
+
+        // رویدادهای صفحه کلید
+        let rightPressed = false;
+        let leftPressed = false;
+
+        // رویدادهای موس
+        let mouseX = 0;
+
+        // مقداردهی اولیه بازی
+        function init() {
+            score = 0;
+            level = 1;
+            lives = 3;
+            updateDisplay();
+            createBricks();
+            resetBall();
+            gameOverScreen.style.display = 'none';
+            levelCompleteScreen.style.display = 'none';
+        }
+
+        // ایجاد آجرها
+        function createBricks() {
+            bricks = [];
+            for (let c = 0; c < brickColumnCount; c++) {
+                bricks[c] = [];
+                for (let r = 0; r < brickRowCount; r++) {
+                    // رنگ‌های مختلف برای سطوح مختلف
+                    let color;
+                    if (level === 1) {
+                        color = `hsl(${r * 60}, 70%, 50%)`;
+                    } else if (level === 2) {
+                        color = `hsl(${r * 40 + 120}, 70%, 50%)`;
+                    } else {
+                        color = `hsl(${r * 30 + 200}, 70%, 50%)`;
+                    }
+                    
+                    bricks[c][r] = { x: 0, y: 0, status: 1, color: color };
+                }
+            }
+        }
+
+        // رندر آجرها
+        function drawBricks() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    if (bricks[c][r].status === 1) {
+                        const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+                        const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+                        bricks[c][r].x = brickX;
+                        bricks[c][r].y = brickY;
+                        
+                        ctx.beginPath();
+                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                        ctx.fillStyle = bricks[c][r].color;
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                }
+            }
+        }
+
+        // رندر صفحه
+        function drawPaddle() {
+            ctx.beginPath();
+            ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+            ctx.fillStyle = '#ff5722';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // رندر توپ
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // تشخیص برخورد
+        function collisionDetection() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    const b = bricks[c][r];
+                    if (b.status === 1) {
+                        if (ballX > b.x && ballX < b.x + brickWidth && ballY > b.y && ballY < b.y + brickHeight) {
+                            ballSpeedY = -ballSpeedY;
+                            b.status = 0;
+                            score += 10 * level;
+                            updateDisplay();
+                            
+                            // بررسی پایان سطح
+                            if (checkLevelComplete()) {
+                                levelComplete();
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // بررسی کامل شدن سطح
+        function checkLevelComplete() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    if (bricks[c][r].status === 1) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        // تکمیل سطح
+        function levelComplete() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            levelCompleteScreen.style.display = 'block';
+        }
+
+        // تنظیم مجدد توپ
+        function resetBall() {
+            ballX = canvas.width / 2;
+            ballY = canvas.height - 30;
+            ballSpeedX = 5 * (Math.random() > 0.5 ? 1 : -1);
+            ballSpeedY = -5;
+        }
+
+        // به‌روزرسانی نمایش
+        function updateDisplay() {
+            scoreElement.textContent = score;
+            levelElement.textContent = level;
+            livesElement.textContent = lives;
+        }
+
+        // رسم بازی
+        function draw() {
+            // پاک کردن کانواس
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // رسم المان‌ها
+            drawBricks();
+            drawPaddle();
+            drawBall();
+            collisionDetection();
+            
+            // تشخیص برخورد با دیوارها
+            if (ballX + ballSpeedX > canvas.width - ballRadius || ballX + ballSpeedX < ballRadius) {
+                ballSpeedX = -ballSpeedX;
+            }
+            
+            if (ballY + ballSpeedY < ballRadius) {
+                ballSpeedY = -ballSpeedY;
+            } else if (ballY + ballSpeedY > canvas.height - ballRadius) {
+                // برخورد با صفحه
+                if (ballX > paddleX && ballX < paddleX + paddleWidth) {
+                    // تغییر زاویه توپ بر اساس محل برخورد با صفحه
+                    const hitPos = (ballX - paddleX) / paddleWidth;
+                    ballSpeedX = 8 * (hitPos - 0.5);
+                    ballSpeedY = -ballSpeedY;
+                } else {
+                    // از دست دادن زندگی
+                    lives--;
+                    updateDisplay();
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                        return;
+                    } else {
+                        resetBall();
+                    }
+                }
+            }
+            
+            // حرکت توپ
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+            
+            // حرکت صفحه
+            if (rightPressed && paddleX < canvas.width - paddleWidth) {
+                paddleX += 7;
+            } else if (leftPressed && paddleX > 0) {
+                paddleX -= 7;
+            }
+            
+            // ادامه حلقه بازی
+            if (gameRunning && !gamePaused) {
+                animationId = requestAnimationFrame(draw);
+            }
+        }
+
+        // پایان بازی
+        function gameOver() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            finalScoreElement.textContent = score;
+            gameOverScreen.style.display = 'block';
+        }
+
+        // شروع بازی
+        function startGame() {
+            if (!gameRunning) {
+                gameRunning = true;
+                gamePaused = false;
+                draw();
+            }
+        }
+
+        // توقف بازی
+        function pauseGame() {
+            if (gameRunning) {
+                if (gamePaused) {
+                    gamePaused = false;
+                    pauseButton.textContent = 'توقف بازی';
+                    draw();
+                } else {
+                    gamePaused = true;
+                    pauseButton.textContent = 'ادامه بازی';
+                    cancelAnimationFrame(animationId);
+                }
+            }
+        }
+
+        // سطح بعدی
+        function nextLevel() {
+            level++;
+            createBricks();
+            resetBall();
+            levelCompleteScreen.style.display = 'none';
+            updateDisplay();
+            startGame();
+        }
+
+        // رویدادهای صفحه کلید
+        function keyDownHandler(e) {
+            if (e.key === 'Right' || e.key === 'ArrowRight') {
+                rightPressed = true;
+            } else if (e.key === 'Left' || e.key === 'ArrowLeft') {
+                leftPressed = true;
+            }
+        }
+
+        function keyUpHandler(e) {
+            if (e.key === 'Right' || e.key === 'ArrowRight') {
+                rightPressed = false;
+            } else if (e.key === 'Left' || e.key === 'ArrowLeft') {
+                leftPressed = false;
+            }
+        }
+
+        // رویدادهای موس
+        function mouseMoveHandler(e) {
+            const relativeX = e.clientX - canvas.getBoundingClientRect().left;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                paddleX = relativeX - paddleWidth / 2;
+                
+                // محدود کردن صفحه به عرض کانواس
+                if (paddleX < 0) {
+                    paddleX = 0;
+                } else if (paddleX > canvas.width - paddleWidth) {
+                    paddleX = canvas.width - paddleWidth;
+                }
+            }
+        }
+
+        // اضافه کردن event listeners
+        document.addEventListener('keydown', keyDownHandler);
+        document.addEventListener('keyup', keyUpHandler);
+        document.addEventListener('mousemove', mouseMoveHandler);
+        
+        startButton.addEventListener('click', startGame);
+        pauseButton.addEventListener('click', pauseGame);
+        restartButton.addEventListener('click', () => {
+            init();
+            startGame();
+        });
+        nextLevelButton.addEventListener('click', nextLevel);
+
+        // مقداردهی اولیه
+        init();
+    </script>
+</body>
+</html>
